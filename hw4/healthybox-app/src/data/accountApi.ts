@@ -1,7 +1,15 @@
 import type { Session } from '@supabase/supabase-js';
-import type { AuthUser, OrderStatus, OrderSummary, ProfileSummary, Role } from '../types';
+import type {
+  AuthUser,
+  OrderLine,
+  OrderStatus,
+  OrderSummary,
+  ProfileDetails,
+  ProfileSummary,
+  Role,
+} from '../types';
 import { ApiError } from './api-error';
-import { mapOrderRows, mapProfileRows } from './mapAccount';
+import { mapOrderLineRows, mapOrderRows, mapProfileDetails, mapProfileRows } from './mapAccount';
 import { getSupabase } from './supabaseClient';
 import { toApiError } from './supabaseApi';
 import { logger } from '../lib/logger';
@@ -49,6 +57,15 @@ export async function fetchOrders(): Promise<OrderSummary[]> {
   return mapOrderRows(data);
 }
 
+/** Order lines (with plan names) of the visible orders: own for a user, all for an admin. */
+export async function fetchOrderLines(): Promise<OrderLine[]> {
+  const { data, error, status } = await getSupabase()
+    .from('order_items')
+    .select('order_id, plan_id, period, qty, unit_price, plans(name)');
+  if (error) throw toApiError(error, status);
+  return mapOrderLineRows(data);
+}
+
 /** Admin: all profiles. A regular user only receives their own profile (RLS). */
 export async function fetchProfiles(): Promise<ProfileSummary[]> {
   const { data, error, status } = await getSupabase()
@@ -57,6 +74,32 @@ export async function fetchProfiles(): Promise<ProfileSummary[]> {
     .order('created_at');
   if (error) throw toApiError(error, status);
   return mapProfileRows(data);
+}
+
+/** The signed-in user's own editable profile details. */
+export async function fetchMyProfile(userId: string): Promise<ProfileDetails> {
+  const { data, error, status } = await getSupabase()
+    .from('profiles')
+    .select('full_name, phone, address')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw toApiError(error, status);
+  return mapProfileDetails(data);
+}
+
+/** Saves the signed-in user's own details (empty strings are stored as null). */
+export async function updateMyProfile(userId: string, details: ProfileDetails): Promise<void> {
+  const { data, error, status } = await getSupabase()
+    .from('profiles')
+    .update({
+      full_name: details.fullName.trim() || null,
+      phone: details.phone.trim() || null,
+      address: details.address.trim() || null,
+    })
+    .eq('id', userId)
+    .select('id');
+  if (error) throw toApiError(error, status);
+  requireUpdated(data);
 }
 
 /** RLS hides forbidden rows instead of failing, so zero updated rows means no access. */

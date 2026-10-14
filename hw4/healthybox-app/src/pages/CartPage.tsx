@@ -8,6 +8,9 @@ export interface CheckoutProps {
   label: string;
   busy: boolean;
   error: string | null;
+  /** Delivery address typed in the cart; empty when the user has none yet. */
+  address: string;
+  onAddressChange: (value: string) => void;
   onCheckout: () => void;
 }
 
@@ -71,6 +74,16 @@ export function CartPage({ cart, onChangeQty, onBack, checkout }: Props) {
           </p>
           {checkout && (
             <>
+              <label className="field">
+                Адрес доставки
+                <input
+                  type="text"
+                  autoComplete="street-address"
+                  maxLength={300}
+                  value={checkout.address}
+                  onChange={(e) => checkout.onAddressChange(e.target.value)}
+                />
+              </label>
               {checkout.error && (
                 <p className="form__error" role="alert">
                   {checkout.error}

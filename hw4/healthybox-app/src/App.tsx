@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CartItem, Period, Plan } from './types';
 import { addToCart, cartCount, changeQty } from './lib/cart';
 import { canAccess } from './lib/roles';
@@ -11,6 +11,7 @@ import { SetPage } from './pages/SetPage';
 import { CartPage } from './pages/CartPage';
 import { AuthPage } from './pages/AuthPage';
 import { MyOrdersPage } from './pages/MyOrdersPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 
 const SIMULATE_FAIL = new URLSearchParams(window.location.search).has('fail');
@@ -22,6 +23,7 @@ export default function App() {
   const [period, setPeriod] = useState<Period>('week');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [address, setAddress] = useState('');
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const today = new Date();
@@ -30,16 +32,37 @@ export default function App() {
   const role = user?.role ?? null;
   const screen = canAccess(role, requested) ? requested : 'catalog';
 
+  // Prefill the delivery address from the profile once per signed-in user.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) {
+      setAddress('');
+      return;
+    }
+    let cancelled = false;
+    void import('./data/accountApi')
+      .then((api) => api.fetchMyProfile(userId))
+      .then((p) => !cancelled && setAddress(p.address))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   const checkout = async () => {
     if (!user) {
       setScreen('auth');
+      return;
+    }
+    if (!address.trim()) {
+      setCheckoutError('Укажите адрес доставки');
       return;
     }
     setCheckoutBusy(true);
     setCheckoutError(null);
     try {
       const api = await import('./data/supabaseApi');
-      const orderId = await api.createOrder(cart);
+      const orderId = await api.createOrder(cart, address);
       await api.placeOrder(orderId);
       setCart([]);
       setScreen('orders');
@@ -61,6 +84,9 @@ export default function App() {
             <>
               <button type="button" className="link" onClick={() => setScreen('orders')}>
                 Мои заказы
+              </button>
+              <button type="button" className="link" onClick={() => setScreen('profile')}>
+                Профиль
               </button>
               {user.role === 'admin' && (
                 <button type="button" className="link" onClick={() => setScreen('admin')}>
@@ -128,6 +154,8 @@ export default function App() {
                     label: user ? 'Оформить заказ' : 'Войти и оформить',
                     busy: checkoutBusy,
                     error: checkoutError,
+                    address,
+                    onAddressChange: setAddress,
                     onCheckout: () => void checkout(),
                   }
                 : undefined
@@ -138,6 +166,7 @@ export default function App() {
           <AuthPage onDone={() => setScreen(cart.length > 0 ? 'cart' : 'catalog')} />
         )}
         {screen === 'orders' && <MyOrdersPage />}
+        {screen === 'profile' && user && <ProfilePage userId={user.id} email={user.email} />}
         {screen === 'admin' && <AdminPage />}
       </main>
     </div>

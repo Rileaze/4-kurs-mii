@@ -1,8 +1,8 @@
 import type { Role } from '../types';
 
-export type Screen = 'catalog' | 'set' | 'cart' | 'auth' | 'orders' | 'admin';
+export type Screen = 'catalog' | 'set' | 'cart' | 'auth' | 'orders' | 'profile' | 'admin';
 
-const SIGNED_IN_SCREENS: readonly Screen[] = ['orders'];
+const SIGNED_IN_SCREENS: readonly Screen[] = ['orders', 'profile'];
 const ADMIN_SCREENS: readonly Screen[] = ['admin'];
 
 /** Narrows an unknown database value to a Role; anything unexpected becomes the safe 'user'. */

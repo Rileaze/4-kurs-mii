@@ -47,14 +47,14 @@ function iso(date: Date): string {
  * Create: places an order from the cart. Requires a signed-in user.
  * Prices are computed by the database trigger, the client only sends plan, period and qty.
  */
-export async function createOrder(cart: readonly CartItem[]): Promise<string> {
+export async function createOrder(cart: readonly CartItem[], address: string): Promise<string> {
   if (cart.length === 0) throw new ApiError('Корзина пуста', 422);
   const sb = getSupabase();
   const first = [...cart].sort((a, b) => a.deliveryDate.getTime() - b.deliveryDate.getTime())[0];
 
   const order = await sb
     .from('orders')
-    .insert({ delivery_date: iso(first.deliveryDate) })
+    .insert({ delivery_date: iso(first.deliveryDate), delivery_address: address.trim() || null })
     .select('id')
     .single();
   if (order.error) throw toApiError(order.error, order.status);

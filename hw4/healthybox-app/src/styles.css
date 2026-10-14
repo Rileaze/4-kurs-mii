@@ -106,7 +106,40 @@ h2 { font-size: 1.1rem; }
   background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
 }
 .order > div { display: flex; flex-direction: column; gap: 2px; }
-.order .inline { flex-direction: row; align-items: center; }
+.order > .inline, .inline { flex-direction: row; align-items: center; display: flex; gap: 8px; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.toolbar select, .toolbar input {
+  font: inherit; padding: 10px 12px; min-height: 44px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+}
+.toolbar input { flex: 1; min-width: 180px; }
+.toolbar .btn { min-height: 44px; padding: 8px 16px; }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 16px; }
+.stat {
+  display: flex; flex-direction: column; gap: 2px; background: #fff;
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 10px;
+}
+.stat strong { font-size: 1.1rem; color: var(--green); }
+.sales { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 4px; }
+.sales li { display: flex; justify-content: space-between; gap: 8px; }
+
+.order-card { list-style: none; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+.order-card__head {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: none; border: 0; padding: 12px; text-align: left; min-height: 56px;
+}
+.order-card__main { display: flex; flex-direction: column; gap: 2px; }
+.order-card__body { padding: 0 12px 12px; border-top: 1px solid var(--border); }
+.order-card__meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 12px 0; font-size: 0.9rem; }
+.order-card__meta dt { color: var(--muted); }
+.order-card__meta dd { margin: 0; word-break: break-all; }
+.order-card__actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.order-card__actions select { font: inherit; padding: 8px 10px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; }
+.lines { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.lines th, .lines td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--border); }
+.lines th:nth-child(n+3), .lines td:nth-child(n+3) { text-align: right; }
 .order .inline input { width: 110px; }
 
 @media (min-width: 640px) {

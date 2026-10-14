@@ -60,12 +60,29 @@ export interface OrderSummary {
   userId: string;
   status: OrderStatus;
   deliveryDate: string;
+  deliveryAddress: string;
   createdAt: string;
   total: number;
+}
+
+/** Personal details a user edits on their own profile page. */
+export interface ProfileDetails {
+  fullName: string;
+  phone: string;
+  address: string;
 }
 
 export interface ProfileSummary {
   id: string;
   email: string;
   role: Role;
+}
+
+export interface OrderLine {
+  orderId: string;
+  planId: string;
+  planName: string;
+  period: Period;
+  qty: number;
+  unitPrice: number;
 }
