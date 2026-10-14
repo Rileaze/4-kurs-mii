@@ -1,8 +1,4 @@
-## Файлы
-- `src/lib/calcBoxPrice.ts` (новый)
-- `src/lib/calcBoxPrice.test.ts` (новый)
-
-Инструменты не использовались: файлы не читались и не создавались, как вы просили. Код ниже.
+Код ниже.
 
 ## `src/lib/calcBoxPrice.ts`
 
