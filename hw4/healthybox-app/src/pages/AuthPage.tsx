@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { validateCredentials } from '../lib/validation';
 
 interface Props {
   onDone: () => void;
@@ -21,11 +20,6 @@ export function AuthPage({ onDone }: Props) {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setNotice(null);
-    const invalid = validateCredentials(email, password);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
     setError(null);
     setBusy(true);
     try {

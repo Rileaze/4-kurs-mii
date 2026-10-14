@@ -2,6 +2,7 @@ import type { CartItem, Plan } from '../types';
 import { ApiError } from './api-error';
 import { mapPlanRows, type PlanRow } from './mapRows';
 import { getSupabase } from './supabaseClient';
+import { logger } from '../lib/logger';
 
 interface DbError {
   message: string;
@@ -83,18 +84,58 @@ export async function deleteDraftOrder(orderId: string): Promise<void> {
   if (error) throw toApiError(error, status);
 }
 
+interface AuthFailure {
+  message: string;
+  code?: string;
+  status?: number;
+}
+
+/** Maps Supabase Auth errors to user-facing messages; unknown ones stay generic. */
+export function toAuthError(error: AuthFailure, action: 'signIn' | 'signUp'): ApiError {
+  const status = error.status ?? 400;
+  switch (error.code) {
+    case 'user_already_exists':
+    case 'email_exists':
+      return new ApiError('Этот email уже зарегистрирован. Попробуйте войти', status);
+    case 'weak_password':
+      return new ApiError('Пароль слишком простой. Используйте не менее 6 символов', status);
+    case 'email_address_invalid':
+      return new ApiError('Этот адрес почты не принят. Попробуйте другой', status);
+    case 'over_email_send_rate_limit':
+    case 'over_request_rate_limit':
+      return new ApiError('Слишком много попыток. Подождите немного и повторите', 429);
+    case 'signup_disabled':
+      return new ApiError('Регистрация отключена в настройках проекта', status);
+    case 'email_not_confirmed':
+      return new ApiError('Подтвердите email по ссылке из письма и войдите снова', status);
+    case 'unexpected_failure':
+      return new ApiError('Ошибка на сервере при создании профиля. Сообщите администратору', 500);
+    default:
+      return new ApiError(
+        action === 'signIn'
+          ? 'Неверный email или пароль'
+          : 'Не удалось зарегистрироваться. Попробуйте ещё раз',
+        status,
+      );
+  }
+}
+
 /** Registers a user. Returns true when the project requires e-mail confirmation before sign-in. */
 export async function signUp(email: string, password: string): Promise<boolean> {
   const { data, error } = await getSupabase().auth.signUp({ email, password });
   if (error) {
-    throw new ApiError('Не удалось зарегистрироваться. Проверьте email и пароль', error.status ?? 400);
+    logger.warning('sign up failed', { code: error.code, status: error.status });
+    throw toAuthError(error, 'signUp');
   }
   return data.session === null;
 }
 
 export async function signIn(email: string, password: string): Promise<void> {
   const { error } = await getSupabase().auth.signInWithPassword({ email, password });
-  if (error) throw new ApiError('Неверный email или пароль', error.status ?? 400);
+  if (error) {
+    logger.warning('sign in failed', { code: error.code, status: error.status });
+    throw toAuthError(error, 'signIn');
+  }
 }
 
 export async function signOut(): Promise<void> {

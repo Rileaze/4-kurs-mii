@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PLANS } from './mock';
 import { mapPlanRows, type PlanRow } from './mapRows';
-import { toApiError } from './supabaseApi';
+import { toApiError, toAuthError } from './supabaseApi';
 
 describe('mapPlanRows', () => {
   it('builds ordered days and meals from nested rows', () => {
@@ -36,6 +36,25 @@ describe('toApiError', () => {
 
   it('falls back to a generic message without leaking details', () => {
     const err = toApiError({ message: 'relation "secret_table" does not exist' }, 500);
+    expect(err.message).not.toContain('secret_table');
+  });
+});
+
+describe('toAuthError', () => {
+  it('explains the common sign-up failures', () => {
+    expect(toAuthError({ message: 'x', code: 'user_already_exists', status: 422 }, 'signUp').message)
+      .toMatch(/уже зарегистрирован/);
+    expect(toAuthError({ message: 'x', code: 'weak_password' }, 'signUp').message).toMatch(/простой/);
+    expect(toAuthError({ message: 'x', code: 'over_email_send_rate_limit' }, 'signUp').status).toBe(429);
+  });
+
+  it('keeps sign-in failures generic so accounts cannot be probed', () => {
+    expect(toAuthError({ message: 'x', code: 'invalid_credentials' }, 'signIn').message)
+      .toBe('Неверный email или пароль');
+  });
+
+  it('does not leak raw server text for unknown errors', () => {
+    const err = toAuthError({ message: 'Database error saving new user: secret_table' }, 'signUp');
     expect(err.message).not.toContain('secret_table');
   });
 });
