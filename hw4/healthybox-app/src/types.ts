@@ -44,3 +44,28 @@ export interface CartItem {
   qty: number;
   deliveryDate: Date;
 }
+
+export type Role = 'user' | 'admin';
+
+export type OrderStatus = 'draft' | 'placed' | 'cancelled';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: Role;
+}
+
+export interface OrderSummary {
+  id: string;
+  userId: string;
+  status: OrderStatus;
+  deliveryDate: string;
+  createdAt: string;
+  total: number;
+}
+
+export interface ProfileSummary {
+  id: string;
+  email: string;
+  role: Role;
+}

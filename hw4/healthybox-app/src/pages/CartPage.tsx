@@ -3,15 +3,25 @@ import { cartTotal, lineTotal } from '../lib/cart';
 import { formatRub } from '../lib/pricing';
 import { EmptyView } from '../components/StateViews';
 
+export interface CheckoutProps {
+  /** Button label, e.g. "Оформить заказ" or "Войти и оформить". */
+  label: string;
+  busy: boolean;
+  error: string | null;
+  onCheckout: () => void;
+}
+
 interface Props {
   cart: readonly CartItem[];
   onChangeQty: (key: string, delta: number) => void;
   onBack: () => void;
+  /** Omitted in mock mode, where there is no backend to place an order. */
+  checkout?: CheckoutProps;
 }
 
 const dateFmt = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
 
-export function CartPage({ cart, onChangeQty, onBack }: Props) {
+export function CartPage({ cart, onChangeQty, onBack, checkout }: Props) {
   return (
     <section>
       <h1>Корзина</h1>
@@ -59,6 +69,23 @@ export function CartPage({ cart, onChangeQty, onBack }: Props) {
           <p className="total">
             Итого: <strong data-testid="cart-total">{formatRub(cartTotal(cart))}</strong>
           </p>
+          {checkout && (
+            <>
+              {checkout.error && (
+                <p className="form__error" role="alert">
+                  {checkout.error}
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn btn--block"
+                disabled={checkout.busy}
+                onClick={checkout.onCheckout}
+              >
+                {checkout.label}
+              </button>
+            </>
+          )}
         </>
       )}
     </section>

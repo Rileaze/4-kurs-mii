@@ -1,23 +1,54 @@
 import { useState } from 'react';
 import type { CartItem, Period, Plan } from './types';
 import { addToCart, cartCount, changeQty } from './lib/cart';
+import { canAccess } from './lib/roles';
+import type { Screen } from './lib/roles';
 import { fetchPlans } from './data/api';
 import { track } from './lib/analytics';
+import { useAuth } from './hooks/useAuth';
 import { CatalogPage } from './pages/CatalogPage';
 import { SetPage } from './pages/SetPage';
 import { CartPage } from './pages/CartPage';
-
-type Screen = 'catalog' | 'set' | 'cart';
+import { AuthPage } from './pages/AuthPage';
+import { MyOrdersPage } from './pages/MyOrdersPage';
+import { AdminPage } from './pages/AdminPage';
 
 const SIMULATE_FAIL = new URLSearchParams(window.location.search).has('fail');
 const loadPlans = () => fetchPlans(SIMULATE_FAIL);
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('catalog');
+  const { enabled, loading, user, signOut } = useAuth();
+  const [requested, setScreen] = useState<Screen>('catalog');
   const [period, setPeriod] = useState<Period>('week');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const today = new Date();
+
+  // A screen the role cannot open falls back to the catalog (e.g. after signing out).
+  const role = user?.role ?? null;
+  const screen = canAccess(role, requested) ? requested : 'catalog';
+
+  const checkout = async () => {
+    if (!user) {
+      setScreen('auth');
+      return;
+    }
+    setCheckoutBusy(true);
+    setCheckoutError(null);
+    try {
+      const api = await import('./data/supabaseApi');
+      const orderId = await api.createOrder(cart);
+      await api.placeOrder(orderId);
+      setCart([]);
+      setScreen('orders');
+    } catch (e: unknown) {
+      setCheckoutError(e instanceof Error ? e.message : 'Не удалось оформить заказ');
+    } finally {
+      setCheckoutBusy(false);
+    }
+  };
 
   return (
     <div className="app">
@@ -25,9 +56,39 @@ export default function App() {
         <button type="button" className="logo" onClick={() => setScreen('catalog')}>
           HealthyBox
         </button>
-        <button type="button" className="cart-btn" aria-label="Корзина" onClick={() => setScreen('cart')}>
-          🛒 <span data-testid="cart-count">{cartCount(cart)}</span>
-        </button>
+        <nav className="header__nav" aria-label="Основное меню">
+          {enabled && !loading && user && (
+            <>
+              <button type="button" className="link" onClick={() => setScreen('orders')}>
+                Мои заказы
+              </button>
+              {user.role === 'admin' && (
+                <button type="button" className="link" onClick={() => setScreen('admin')}>
+                  Админ
+                </button>
+              )}
+              <span className="badge" title={user.email}>
+                {user.role === 'admin' ? 'Администратор' : 'Пользователь'}
+              </span>
+              <button type="button" className="link" onClick={() => void signOut()}>
+                Выйти
+              </button>
+            </>
+          )}
+          {enabled && !loading && !user && (
+            <button type="button" className="link" onClick={() => setScreen('auth')}>
+              Войти
+            </button>
+          )}
+          <button
+            type="button"
+            className="cart-btn"
+            aria-label="Корзина"
+            onClick={() => setScreen('cart')}
+          >
+            🛒 <span data-testid="cart-count">{cartCount(cart)}</span>
+          </button>
+        </nav>
       </header>
       <main className="main">
         {screen === 'catalog' && (
@@ -61,8 +122,23 @@ export default function App() {
               track('change_cart_qty', { delta });
             }}
             onBack={() => setScreen('catalog')}
+            checkout={
+              enabled
+                ? {
+                    label: user ? 'Оформить заказ' : 'Войти и оформить',
+                    busy: checkoutBusy,
+                    error: checkoutError,
+                    onCheckout: () => void checkout(),
+                  }
+                : undefined
+            }
           />
         )}
+        {screen === 'auth' && (
+          <AuthPage onDone={() => setScreen(cart.length > 0 ? 'cart' : 'catalog')} />
+        )}
+        {screen === 'orders' && <MyOrdersPage />}
+        {screen === 'admin' && <AdminPage />}
       </main>
     </div>
   );

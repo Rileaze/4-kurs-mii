@@ -61,7 +61,10 @@ export async function createOrder(cart: readonly CartItem[]): Promise<string> {
   const items = await sb.from('order_items').insert(
     cart.map((i) => ({ order_id: order.data.id, plan_id: i.planId, period: i.period, qty: i.qty })),
   );
-  if (items.error) throw toApiError(items.error, items.status);
+  if (items.error) {
+    await sb.from('orders').delete().eq('id', order.data.id);
+    throw toApiError(items.error, items.status);
+  }
   return order.data.id as string;
 }
 
@@ -80,9 +83,13 @@ export async function deleteDraftOrder(orderId: string): Promise<void> {
   if (error) throw toApiError(error, status);
 }
 
-export async function signUp(email: string, password: string): Promise<void> {
-  const { error } = await getSupabase().auth.signUp({ email, password });
-  if (error) throw new ApiError(error.message, error.status ?? 400);
+/** Registers a user. Returns true when the project requires e-mail confirmation before sign-in. */
+export async function signUp(email: string, password: string): Promise<boolean> {
+  const { data, error } = await getSupabase().auth.signUp({ email, password });
+  if (error) {
+    throw new ApiError('Не удалось зарегистрироваться. Проверьте email и пароль', error.status ?? 400);
+  }
+  return data.session === null;
 }
 
 export async function signIn(email: string, password: string): Promise<void> {

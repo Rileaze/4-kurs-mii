@@ -90,6 +90,25 @@ h2 { font-size: 1.1rem; }
 .cart__sum { justify-self: end; }
 .total { font-size: 1.2rem; text-align: right; }
 
+.header__nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 12px; }
+.badge { background: var(--green-light); color: var(--green); border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; }
+
+.form { display: grid; gap: 12px; max-width: 420px; }
+.field { display: grid; gap: 4px; font-size: 0.9rem; }
+.field input, .order input, .order select {
+  font: inherit; padding: 10px 12px; min-height: 44px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+}
+.form__error { color: #b00020; margin: 8px 0; }
+
+.order {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px;
+}
+.order > div { display: flex; flex-direction: column; gap: 2px; }
+.order .inline { flex-direction: row; align-items: center; }
+.order .inline input { width: 110px; }
+
 @media (min-width: 640px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
   .calendar { grid-template-columns: repeat(4, 1fr); }
