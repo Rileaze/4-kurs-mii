@@ -16,7 +16,7 @@ describe('CatalogPage', () => {
     setup(() => Promise.resolve(PLANS));
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(await screen.findByText('Баланс')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /ккал в день/ })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: /ккал в день/ })).toHaveLength(PLANS.length);
   });
 
   it('opens a plan on card click', async () => {

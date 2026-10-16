@@ -30,6 +30,7 @@ import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 type Tab = 'summary' | 'orders' | 'users' | 'prices';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
+  { id: 'summary', label: 'Свод' },
   { id: 'orders', label: 'Заказы' },
   { id: 'users', label: 'Пользователи' },
   { id: 'prices', label: 'Цены' },
