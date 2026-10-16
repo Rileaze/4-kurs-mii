@@ -24,9 +24,10 @@ import { formatRub } from '../lib/pricing';
 import { parsePrice } from '../lib/validation';
 import { dateStamp, downloadText } from '../components/download';
 import { OrderCard } from '../components/OrderCard';
+import { SummaryTab } from './SummaryPage';
 import { EmptyView, ErrorView, LoadingView } from '../components/StateViews';
 
-type Tab = 'orders' | 'users' | 'prices';
+type Tab = 'summary' | 'orders' | 'users' | 'prices';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'orders', label: 'Заказы' },
@@ -312,7 +313,7 @@ function PricesTab() {
 
 export function AdminPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>('summary');
 
   return (
     <section>
@@ -331,6 +332,7 @@ export function AdminPage() {
           </button>
         ))}
       </div>
+      {tab === 'summary' && <SummaryTab />}
       {tab === 'orders' && <OrdersTab />}
       {tab === 'users' && <UsersTab selfId={user?.id ?? ''} />}
       {tab === 'prices' && <PricesTab />}

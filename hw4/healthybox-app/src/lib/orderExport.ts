@@ -1,6 +1,8 @@
 import type { OrderLine, OrderSummary, ProfileSummary } from '../types';
 import { toCsv } from './csv';
 import { ORDER_STATUS_LABELS, groupLines, orderLineTotal } from './orders';
+import { sheetTotals } from './summary';
+import type { SheetRow } from './summary';
 
 const PERIOD_LABELS = { day: 'День', week: 'Неделя' } as const;
 
@@ -50,6 +52,39 @@ export function buildOrdersCsv(
     ]);
   });
   return toCsv([header, ...rows]);
+}
+
+/** The summary sheet exactly as shown on screen (same rows, same order), plus a totals row. */
+export function buildSheetCsv(rows: readonly SheetRow[]): string {
+  const totals = sheetTotals(rows);
+  const header = [
+    'Заказ',
+    'Создан',
+    'Клиент',
+    'Статус',
+    'Доставка с',
+    'Адрес доставки',
+    'Рацион',
+    'Период',
+    'Количество',
+    'Цена, ₽',
+    'Сумма, ₽',
+  ];
+  const body = rows.map((r) => [
+    r.orderId,
+    r.createdAt.slice(0, 10),
+    r.customer,
+    ORDER_STATUS_LABELS[r.status],
+    r.deliveryDate,
+    r.address,
+    r.planName,
+    r.period === '' ? '' : PERIOD_LABELS[r.period],
+    r.qty,
+    r.unitPrice,
+    r.lineTotal,
+  ]);
+  const footer = ['Итого', '', '', '', '', '', '', '', totals.qty, '', totals.amount];
+  return toCsv([header, ...body, footer]);
 }
 
 /** Users with their order counts and the sum of their placed orders. */

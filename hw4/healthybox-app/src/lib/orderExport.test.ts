@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { OrderLine, OrderSummary, ProfileSummary } from '../types';
-import { buildOrdersCsv, buildUsersCsv } from './orderExport';
+import { buildOrdersCsv, buildSheetCsv, buildUsersCsv } from './orderExport';
+import type { SheetRow } from './summary';
 
 const ORDER: OrderSummary = {
   id: 'o1',
@@ -58,5 +59,37 @@ describe('buildUsersCsv', () => {
     const rows = rowsOf(buildUsersCsv(profiles, orders));
     expect(rows[1]).toBe('anna@mail.ru;Пользователь;2;4095');
     expect(rows[2]).toBe('boss@mail.ru;Администратор;0;0');
+  });
+});
+
+describe('buildSheetCsv', () => {
+  const ROW: SheetRow = {
+    orderId: 'o1',
+    createdAt: '2026-10-14T10:00:00Z',
+    customer: 'anna@mail.ru',
+    status: 'placed',
+    deliveryDate: '2026-10-20',
+    address: 'Казань',
+    planName: 'Баланс',
+    period: 'week',
+    qty: 2,
+    unitPrice: 4095,
+    lineTotal: 8190,
+  };
+
+  it('writes the header, the rows and a totals row', () => {
+    const rows = rowsOf(buildSheetCsv([ROW, { ...ROW, orderId: 'o2', qty: 1, lineTotal: 4095 }]));
+    expect(rows).toHaveLength(4);
+    expect(rows[1]).toBe('o1;2026-10-14;anna@mail.ru;Оформлен;2026-10-20;Казань;Баланс;Неделя;2;4095;8190');
+    expect(rows[3]).toBe('Итого;;;;;;;;3;;12285');
+  });
+
+  it('exports an empty period for an order without lines', () => {
+    const rows = rowsOf(buildSheetCsv([{ ...ROW, planName: '', period: '', qty: 0, lineTotal: 0 }]));
+    expect(rows[1].split(';')[7]).toBe('');
+  });
+
+  it('has only the header and a zero totals row for an empty sheet', () => {
+    expect(rowsOf(buildSheetCsv([]))).toHaveLength(2);
   });
 });
